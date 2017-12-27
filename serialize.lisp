@@ -44,7 +44,7 @@
        (put-big-endian 4 len)
        (put-sequence sequence)))))
 
-(defmethod serialize-aux (value)
+(defun serialize-aux (value)
   (typecase value
     (null
      (put-octet #xC0))
