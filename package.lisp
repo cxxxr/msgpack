@@ -6,4 +6,5 @@
    :false
    :serialize-value
    :serialize
+   :deserialize-ext
    :deserialize))

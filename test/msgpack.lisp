@@ -154,8 +154,13 @@
 (defmethod serialize-value ((foo foo))
   (make-ext #x40 (list (foo-x foo) (foo-y foo))))
 
+(defmethod deserialize-ext ((type (eql #x40)) octets)
+  (deserialize octets))
+
 (test ext-serialize
   (is (octets-equal #(214 64 146 100 204 200)
                     (serialize (make-foo :x 100 :y 200))))
   (is (octets-equal #(215 64 0 0 146 0 163 65 66 67)
-                    (serialize (make-foo :x 0 :y "ABC")))))
+                    (serialize (make-foo :x 0 :y "ABC"))))
+  (is (octets-equal #(100 200)
+                    (deserialize (serialize (make-foo :x 100 :y 200))))))

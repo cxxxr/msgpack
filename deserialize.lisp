@@ -1,5 +1,7 @@
 (in-package :msgpack)
 
+(defgeneric deserialize-ext (type octets))
+
 (defstruct reader
   octets
   pos)
@@ -81,6 +83,17 @@
 (defun decode-map* (n)
   (decode-map (decode-unsigned-integer n)))
 
+(defun decode-ext-fixed (n)
+  (let ((type (read-octet))
+        (octets (read-octets n)))
+    (deserialize-ext type octets)))
+
+(defun decode-ext-variadic (n)
+  (let* ((len (decode-unsigned-integer n))
+         (type (read-octet))
+         (octets (read-octets len)))
+    (deserialize-ext type octets)))
+
 (defun deserialize-1 ()
   (let ((octet (read-octet)))
     (cond ((= octet #xC0) nil)
@@ -115,16 +128,14 @@
           ((= #b1000 (ldb (byte 4 4) octet)) (decode-map (ldb (byte 4 0) octet)))
           ((= octet #xDE) (decode-map* 2))
           ((= octet #xDF) (decode-map* 4))
-
-          ((= octet #xD4))
-          ((= octet #xD5))
-          ((= octet #xD6))
-          ((= octet #xD7))
-          ((= octet #xD8))
-          ((= octet #xC7))
-          ((= octet #xC8))
-          ((= octet #xC9))
-
+          ((= octet #xD4) (decode-ext-fixed 1))
+          ((= octet #xD5) (decode-ext-fixed 2))
+          ((= octet #xD6) (decode-ext-fixed 4))
+          ((= octet #xD7) (decode-ext-fixed 8))
+          ((= octet #xD8) (decode-ext-fixed 16))
+          ((= octet #xC7) (decode-ext-variadic 1))
+          ((= octet #xC8) (decode-ext-variadic 2))
+          ((= octet #xC9) (decode-ext-variadic 4))
           (t (error "unexpected byte: ~B" octet)))))
 
 (defun deserialize (octets)
