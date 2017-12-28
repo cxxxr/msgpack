@@ -3,6 +3,7 @@
                "babel")
   :serial t
   :components ((:file "package")
+               (:file "ext")
                (:file "serialize")
                (:file "deserialize"))
   :in-order-to ((test-op (test-op "msgpack-test"))))

@@ -147,3 +147,15 @@
   (let ((hash (plist-to-hash-table '("foo" 123 "bar" "hogehoge" -123 #(1 2 3)))))
     (let ((hash2 (deserialize (serialize hash))))
       (is (hash-equal hash hash2)))))
+
+
+(defstruct foo x y)
+
+(defmethod serialize-value ((foo foo))
+  (make-ext #x40 (list (foo-x foo) (foo-y foo))))
+
+(test ext-serialize
+  (is (octets-equal #(214 64 146 100 204 200)
+                    (serialize (make-foo :x 100 :y 200))))
+  (is (octets-equal #(215 64 0 0 146 0 163 65 66 67)
+                    (serialize (make-foo :x 0 :y "ABC")))))

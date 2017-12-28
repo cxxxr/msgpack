@@ -44,6 +44,37 @@
        (put-big-endian 4 len)
        (put-sequence sequence)))))
 
+(defun serialize-ext (ext)
+  (let* ((type (ext-type ext))
+         (octets (ext-octets ext))
+         (len (length octets)))
+    (flet ((ext-fixed (kind size)
+             (put-octet kind)
+             (put-octet type)
+             (loop :repeat (- size len) :do (put-octet 0))
+             (put-octets octets))
+           (ext-variadic (kind n)
+             (put-octet kind)
+             (put-big-endian n len)
+             (put-octet type)
+             (put-octets octets)))
+      (cond ((<= len 1)
+             (ext-fixed #xD4 1))
+            ((<= len 2)
+             (ext-fixed #xD5 2))
+            ((<= len 4)
+             (ext-fixed #xD6 4))
+            ((<= len 8)
+             (ext-fixed #xD7 8))
+            ((<= len 16)
+             (ext-fixed #xD8 16))
+            ((< len #.(expt 2 8))
+             (ext-variadic #xC7 1))
+            ((< len #.(expt 2 16))
+             (ext-variadic #xC8 2))
+            (t
+             (ext-variadic #xC9 4))))))
+
 (defun serialize-aux (value)
   (typecase value
     (null
@@ -157,6 +188,9 @@
           (put-octet #xDF)
           (put-big-endian 4 len)
           (put-hash-table value)))))
+
+    (ext
+     (serialize-ext value))
 
     (otherwise
      (serialize-aux (serialize-value value)))))
