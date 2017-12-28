@@ -17,6 +17,13 @@
   (prog1 (peek-octet)
     (skip-octets 1)))
 
+(defun read-octets (len)
+  (prog1 (make-array len
+                     :element-type '(unsigned-byte 8)
+                     :displaced-to (reader-octets *reader*)
+                     :displaced-index-offset (reader-pos *reader*))
+    (skip-octets len)))
+
 (defun decode-big-endian (n)
   (loop :with bits := 0
         :for i :downfrom (1- n) :to 0
@@ -52,11 +59,7 @@
 
 (defun decode-byte-array (n)
   (let ((length (decode-unsigned-integer n)))
-    (prog1 (make-array length
-                       :element-type '(unsigned-byte 8)
-                       :displaced-to (reader-octets *reader*)
-                       :displaced-index-offset (reader-pos *reader*))
-      (skip-octets length))))
+    (read-octets length)))
 
 (defun decode-generic-array (length)
   (let ((array (make-array length)))
