@@ -6,29 +6,29 @@
 
 (defvar *reader*)
 
-(defun current-octet ()
+(defun peek-octet ()
   (aref (reader-octets *reader*)
         (reader-pos *reader*)))
 
 (defun skip-octets (n)
   (incf (reader-pos *reader*) n))
 
-(defun next-octet ()
-  (prog1 (current-octet)
+(defun read-octet ()
+  (prog1 (peek-octet)
     (skip-octets 1)))
 
 (defun decode-big-endian (n)
   (loop :with bits := 0
         :for i :downfrom (1- n) :to 0
         :do (setf (ldb (byte 8 (* 8 i)) bits)
-                  (next-octet))
+                  (read-octet))
         :finally (return bits)))
 
 (defun decode-unsigned-integer (n)
   (decode-big-endian n))
 
 (defun decode-signed-integer (n)
-  (let ((minusp (logbitp 7 (current-octet)))
+  (let ((minusp (logbitp 7 (peek-octet)))
         (bits (decode-big-endian n)))
     (if minusp
         (- (1+ (ldb (byte (* n 8) 0) (lognot bits))))
@@ -79,7 +79,7 @@
   (decode-map (decode-unsigned-integer n)))
 
 (defun deserialize-1 ()
-  (let ((octet (next-octet)))
+  (let ((octet (read-octet)))
     (cond ((= octet #xC0) nil)
           ((= octet #xC2) nil)
           ((= octet #xC3) t)
