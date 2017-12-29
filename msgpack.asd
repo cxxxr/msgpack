@@ -2,10 +2,7 @@
   :depends-on ("ieee-floats"
                "babel")
   :serial t
-  :components ((:file "package")
-               (:file "ext")
-               (:file "serialize")
-               (:file "deserialize"))
+  :components ((:file "msgpack"))
   :in-order-to ((test-op (test-op "msgpack-test"))))
 
 (defsystem "msgpack-test"
