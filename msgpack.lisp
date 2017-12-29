@@ -6,8 +6,8 @@
    :false
    :serialize-value
    :serialize
-   :deserialize-ext
-   :deserialize))
+   :deserialize
+   :define-ext))
 (in-package :msgpack)
 
 (defstruct (ext (:constructor %make-ext (type octets)))
@@ -19,6 +19,7 @@
     (assert (< (length octets) #.(expt 2 32)))
     (%make-ext type octets)))
 
+
 ;;; serialize
 
 (defgeneric serialize-value (value))
@@ -225,6 +226,7 @@
     (serialize-aux value)
     *serialize-buffer*))
 
+
 ;;; deserialize
 
 (defgeneric deserialize-ext (type octets))
@@ -368,3 +370,18 @@
 (defun deserialize (octets)
   (let ((*reader* (make-reader :octets octets :pos 0)))
     (deserialize-1)))
+
+
+(defmacro define-ext (name (&key type) &body specs)
+  (let ((serialize-form (rest (assoc :serialize specs)))
+        (deserialize-form (rest (assoc :deserialize specs))))
+    (let ((value (gensym "VALUE"))
+          (type-var (gensym "TYPE")))
+      `(progn
+         ,(destructuring-bind ((var) &body body) serialize-form
+            `(defmethod serialize-value ((,var ,name))
+               (let ((,value (progn ,@body)))
+                 (make-ext ,type ,value))))
+         ,(destructuring-bind ((octets) &body body) deserialize-form
+            `(defmethod deserialize-ext ((,type-var (eql ,type)) ,octets)
+               ,@body))))))

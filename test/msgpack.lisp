@@ -151,16 +151,19 @@
 
 (defstruct foo x y)
 
-(defmethod serialize-value ((foo foo))
-  (make-ext #x40 (list (foo-x foo) (foo-y foo))))
-
-(defmethod deserialize-ext ((type (eql #x40)) octets)
-  (deserialize octets))
+(define-ext foo (:type #x40)
+  (:serialize (foo)
+   (list (foo-x foo) (foo-y foo)))
+  (:deserialize (octets)
+   (let ((vector (deserialize octets)))
+     (make-foo :x (aref vector 0)
+               :y (aref vector 1)))))
 
 (test ext-serialize
   (is (octets-equal #(214 64 146 100 204 200)
                     (serialize (make-foo :x 100 :y 200))))
   (is (octets-equal #(215 64 0 0 146 0 163 65 66 67)
                     (serialize (make-foo :x 0 :y "ABC"))))
-  (is (octets-equal #(100 200)
-                    (deserialize (serialize (make-foo :x 100 :y 200))))))
+  (let ((foo (deserialize (serialize (make-foo :x 100 :y 200)))))
+    (is (= 100 (foo-x foo)))
+    (is (= 200 (foo-y foo)))))
